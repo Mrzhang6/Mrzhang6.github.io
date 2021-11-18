@@ -4,51 +4,25 @@
   
     
     <entry>
-      <title>第一篇测试文章</title>
-      <link href="/2021/11/18/di-yi-pian-ce-shi-wen-zhang/"/>
-      <url>/2021/11/18/di-yi-pian-ce-shi-wen-zhang/</url>
+      <title>redis集群模式</title>
+      <link href="/2021/11/18/redis-zhu-cong-fu-zhi/"/>
+      <url>/2021/11/18/redis-zhu-cong-fu-zhi/</url>
       
-        <content type="html"><![CDATA[<h1 id="第一章"><a href="#第一章" class="headerlink" title="第一章"></a>第一章</h1><p>第二章</p><h3 id="第三章"><a href="#第三章" class="headerlink" title="第三章"></a>第三章</h3>]]></content>
-      
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>Hello World</title>
-      <link href="/2021/11/18/hello-world/"/>
-      <url>/2021/11/18/hello-world/</url>
-      
-        <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><pre class=" language-bash"><code class="language-bash">$ hexo new <span class="token string">"My New Post"</span></code></pre><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><pre class=" language-bash"><code class="language-bash">$ hexo server</code></pre><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><pre class=" language-bash"><code class="language-bash">$ hexo generate</code></pre><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><pre class=" language-bash"><code class="language-bash">$ hexo deploy</code></pre><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
-      
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>基于Hexo的hexo-theme-matery主题搭建博客并优化</title>
-      <link href="/2021/11/15/zhu-ti-shi-li/"/>
-      <url>/2021/11/15/zhu-ti-shi-li/</url>
-      
-        <content type="html"><![CDATA[<h1 id="hello"><a href="#hello" class="headerlink" title="hello"></a>hello</h1><p>jdia</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="redis集群的三种方案"><a href="#redis集群的三种方案" class="headerlink" title="redis集群的三种方案"></a>redis集群的三种方案</h1><p>redis支持三种集群方案，主从复制模式、Sentinel（哨兵模式）、Cluster模式。下面将以此介绍这三种方案。</p><h2 id="主从复制模式"><a href="#主从复制模式" class="headerlink" title="主从复制模式"></a>主从复制模式</h2><p><img src="/2021/11/18/redis-zhu-cong-fu-zhi/T_1.png" alt="T_1"></p><p>redis主从复制架构采用的是一主多从或者级联架构。redis主从复制可以分为全量同步和增量同步。</p><h3 id="全量同步："><a href="#全量同步：" class="headerlink" title="全量同步："></a>全量同步：</h3><p>全量同步一般发生在slave<strong>初始化阶段</strong>，此时slave需要将master中的所有数据都复制一遍。</p><p><img src="/2021/11/18/redis-zhu-cong-fu-zhi/2.png" alt="2"></p><p>步骤如下：</p><ul><li>从服务器连接主服务器，并发送sync请求。</li><li>主服务器接收到sync命令后，开始执行bgsave命令，生成RDB文件。在此期间在缓冲区记录此后执行的所有命令。</li><li>主服务器bgsave执行完毕后，向从服务器发送快照文件，并在此期间继续记录被执行的写命令。</li><li>从服务器收到快照文件后丢弃旧数据并加载快照，生成新的数据。</li><li>主服务器快照发送完毕后向从服务器发送缓冲区中的写命令。</li><li>从服务器完成对快照的载入，并执行来自主服务缓冲区的写命令。</li></ul><p>完成以上步骤，从服务器就可以接收来自用户的读请求。</p><h3 id="增量同步–部分复制："><a href="#增量同步–部分复制：" class="headerlink" title="增量同步–部分复制："></a>增量同步–部分复制：</h3><p>Redis增量复制是指Slave初始化后开始正常工作时主服务器发生的写操作同步到从服务器的过程。 </p><p>增量复制的过程主要是主服务器每执行一个写命令就会向从服务器发送相同的写命令，从服务器接收并执行收到的写命令。</p><blockquote><p>主从刚刚连接的时候，进行全量同步；全同步结束后，进行增量同步。当然，如果有需要，slave 在任何时候都可以发起全量同步。Redis 的策略是，无论如何，首先会尝试进行增量同步，如不成功，要求从机进行全量同步。</p></blockquote><p>部分复制依赖三个重要概念：</p><ul><li>复制偏移量</li><li>复制积压缓冲区</li><li>服务器运行id（runid）</li></ul><h4 id="复制偏移量"><a href="#复制偏移量" class="headerlink" title="复制偏移量"></a>复制偏移量</h4><p>主从节点都维护一个复制偏移量offset。</p><p>主节点每次向从节点同步了N字节数据后，将修改自己的复制偏移量offset+N<br>从节点每次从主节点同步了N字节数据后，将修改自己的复制偏移量offset+N</p><p>offset用于判断主从节点的数据库状态是否一致：如果二者offset相同，则一致；如果offset不同，则不一致，此时可以根据两个offset找出从节点缺少的那部分数据。</p><h4 id="复制积压缓冲区："><a href="#复制积压缓冲区：" class="headerlink" title="复制积压缓冲区："></a>复制积压缓冲区：</h4><p>主节点维护一个<strong>固定长度、先进先出的队列</strong>作为复制积压缓冲区。默认大小为1MB。</p><p>在主节点进行命令传播时，不仅会将写命令同步到从节点，还会将写命令写入复制积压缓冲区。</p><p>由于复制积压缓冲区定长且是先进先出，所以它保存的是主节点最近执行的写命令；时间较早的写命令会被挤出缓冲区。因此，<strong>当主从节点offset的差距过大超过缓冲区长度时，将无法执行部分复制，只能执行全量复制。</strong></p><blockquote><p>复制积压缓冲区可以根据业务情况进行调节，来提高网络中断后部分复制的执行概率。</p></blockquote><p>从节点将offset发送给主节点后，主节点根据offset和缓冲区大小决定能否执行部分复制：</p><ul><li>如果offset偏移量之后的数据，仍然都在复制积压缓冲区里，则执行<strong>部分复制</strong>；</li><li>如果offset偏移量之后的数据已不在复制积压缓冲区中（数据已被挤出），则执行<strong>全量复制</strong>。</li></ul><h4 id="服务器运行id"><a href="#服务器运行id" class="headerlink" title="服务器运行id"></a>服务器运行id</h4><p>每个Redis节点，都有其运行ID，运行ID由节点在启动时自动生成，主节点会将自己的运行ID发送给从节点，从节点会将主节点的运行ID存起来。<br>从节点Redis断开重连的时候，就是根据运行ID来判断同步的进度：</p><ul><li>如果从节点保存的runid与主节点现在的runid相同，说明主从节点之前同步过，主节点会继续尝试使用部分复制(到底能不能部分复制还要看offset和复制积压缓冲区的情况)；</li><li>如果从节点保存的runid与主节点现在的runid不同，说明从节点在断线前同步的Redis节点并不是当前的主节点，只能进行全量复制。</li></ul><h3 id="psync命令执行过程–redis2-8之后"><a href="#psync命令执行过程–redis2-8之后" class="headerlink" title="psync命令执行过程–redis2.8之后"></a>psync命令执行过程–redis2.8之后</h3><p><img src="/2021/11/18/redis-zhu-cong-fu-zhi/1240.png" alt="1240"></p><p>psync命令的大体流程如下：</p><ul><li>如果从节点之前没有复制过任何主节点，或者之前执行过slaveof no one命令，从节点就会向主节点发送<code>psync</code>命令，请求主节点进行数据的全量同步</li><li>如果前面从节点已经同步过部分数据，此时从节点就会发送psync {runid} {offset}命令给主节点，其中runid是上一次主节点的运行ID，offset是当前从节点的复制偏移量</li></ul><p>主节点收到psync命令后，会出现以下三种可能：</p><ul><li>主节点返回 fullresync {runid} {offset}回复，表示主节点要求与从节点进行数据的完整全量复制，其中runid表示主节点的运行ID，offset表示当前主节点的复制偏移量</li><li>如果主服务器返回 +continue，表示主节点与从节点会进行部分数据的同步操作，将从服务器缺失的数据复制过来即可</li><li>如果主服务器返回 -err，表示主服务器的Redis版本低于2.8，无法识别psync命令，此时从服务器会向主服务器发送sync命令，进行完整的数据全量复制</li></ul><h3 id="心跳检测机制"><a href="#心跳检测机制" class="headerlink" title="心跳检测机制"></a>心跳检测机制</h3><p>心跳检测机制的作用：</p><ol><li>检查主从服务器的网络连接状态。</li><li>辅助实现min-slaves选项</li><li>检测命令丢失</li></ol><h4 id="检查主从服务器的网络连接状态"><a href="#检查主从服务器的网络连接状态" class="headerlink" title="检查主从服务器的网络连接状态"></a>检查主从服务器的网络连接状态</h4><p>主节点信息中可以看到所属的从节点的连接信息：</p><ul><li>state 表示从节点状态</li><li>offset 表示复制偏移量</li><li>lag 表示延迟值（几秒之前有过心跳检测机制）</li></ul><p><img src="/2021/11/18/redis-zhu-cong-fu-zhi/1240.png" alt="在这里插入图片描述"></p><h4 id="辅助实现min-slaves选项"><a href="#辅助实现min-slaves选项" class="headerlink" title="辅助实现min-slaves选项"></a>辅助实现min-slaves选项</h4><p>Redis.conf配置文件中有下方两个参数</p><pre class=" language-c"><code class="language-c"># 未达到下面两个条件时，写操作就不会被执行# 最少包含的从服务器<span class="token macro property"># min-slaves-to-write 3</span># 延迟值<span class="token macro property"># min-slaves-max-lag 10</span></code></pre><p>如果将两个参数的注释取消，那么如果从服务器的数量少于3个，或者三个从服务器的延迟（lag）大于等于10秒时，主服务器都会拒绝执行写命令。</p><h4 id="检测命令丢失"><a href="#检测命令丢失" class="headerlink" title="检测命令丢失"></a>检测命令丢失</h4><p>在从服务器的连接信息中可以看到复制偏移量，如果此时主服务器的复制偏移量与从服务器的复制偏移量不一致时，主服务器会补发缺失的数据。</p><h2 id="主从复制问题："><a href="#主从复制问题：" class="headerlink" title="主从复制问题："></a>主从复制问题：</h2><h3 id="读写分离问题："><a href="#读写分离问题：" class="headerlink" title="读写分离问题："></a>读写分离问题：</h3><ul><li><p> <strong>延迟与不一致问题</strong>。由于主从复制的命令传播是异步的，延迟与数据的不一致不可避免。</p></li><li><p>数据过期问题。在主从复制场景下，为了主从节点的数据一致性，从节点不会主动删除数据，而是由主节点控制从节点中过期数据的删除。由于主节点的惰性删除和定期删除策略，都不能保证主节点及时对过期数据执行删除操作，因此，当客户端通过Redis从节点读取数据时，很容易读取到已经过期的数据。</p><p>Redis 3.2中，从节点在读取数据时，增加了对数据是否过期的判断：如果该数据已过期，则不返回给客户端；将Redis升级到3.2可以解决数据过期问题。</p></li><li><p>故障切换问题。在没有使用哨兵的读写分离场景下，应用针对读和写分别连接不同的Redis节点；当主节点或从节点出现问题而发生更改时，需要及时修改应用程序读写Redis数据的连接；连接的切换可以手动进行，或者自己写监控程序进行切换，但前者响应慢、容易出错，后者实现复杂，成本都不算低。</p></li></ul><h3 id="复制超时问题"><a href="#复制超时问题" class="headerlink" title="复制超时问题"></a>复制超时问题</h3><p>主从节点都能判断连接是否超时。</p><p>主节点判断连接超时，其会释放相应从节点的连接，从而释放各种资源，否则无效的从节点仍会占用主节点的各种资源（输出缓冲区、带宽、连接等）；此外连接超时的判断可以让主节点更准确的知道当前有效从节点的个数，有助于保证数据安全（配合前面讲到的min-slaves-to-write等参数）。</p><p>从节点判断连接超时，则可以及时重新建立连接，避免与主节点数据长期的不一致。</p><p>下面介绍与复制阶段连接超时有关的一些实际问题：</p><ol><li>数据同步阶段：在主从节点进行全量复制bgsave时，主节点需要首先fork子进程将当前数据保存到RDB文件中，然后再将RDB文件通过网络传输到从节点。如果RDB文件过大，主节点在fork子进程+保存RDB文件时耗时过多，可能会导致从节点长时间收不到数据而触发超时；此时从节点会重连主节点，然后再次全量复制，再次超时，再次重连……这是个悲伤的循环。为了避免这种情况的发生，除了注意Redis单机数据量不要过大，另一方面就是适当增大repl-timeout值，具体的大小可以根据bgsave耗时来调整。</li><li>命令传播阶段：如前所述，在该阶段主节点会向从节点发送PING命令，频率由repl-ping-slave-period控制；该参数应明显小于repl-timeout值(后者至少是前者的几倍)。否则，如果两个参数相等或接近，网络抖动导致个别PING命令丢失，此时恰巧主节点也没有向从节点发送数据，则从节点很容易判断超时。</li><li>慢查询导致的阻塞：如果主节点或从节点执行了一些慢查询（如keys *或者对大数据的hgetall等），导致服务器阻塞；阻塞期间无法响应复制连接中对方节点的请求，可能导致复制超时。</li></ol>]]></content>
       
       
       <categories>
           
-          <category> 工具 </category>
+          <category> redis </category>
           
       </categories>
       
       
         <tags>
             
-            <tag> blog </tag>
+            <tag> redis </tag>
             
-            <tag> hexo </tag>
+            <tag> 集群 </tag>
             
         </tags>
       
