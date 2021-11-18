@@ -28,6 +28,33 @@
     </entry>
     
     
+    
+    <entry>
+      <title>基于Hexo的hexo-theme-matery主题搭建博客并优化</title>
+      <link href="/2021/11/15/zhu-ti-shi-li/"/>
+      <url>/2021/11/15/zhu-ti-shi-li/</url>
+      
+        <content type="html"><![CDATA[<h1 id="hello"><a href="#hello" class="headerlink" title="hello"></a>hello</h1><p>jdia</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 工具 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> blog </tag>
+            
+            <tag> hexo </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
   
   
 </search>
