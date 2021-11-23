@@ -4,6 +4,33 @@
   
     
     <entry>
+      <title>Redis哨兵模式</title>
+      <link href="/2021/11/23/redis-shao-bing-mo-shi/"/>
+      <url>/2021/11/23/redis-shao-bing-mo-shi/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Redis哨兵模式"><a href="#Redis哨兵模式" class="headerlink" title="Redis哨兵模式"></a>Redis哨兵模式</h1><h2 id="主从复制的缺陷："><a href="#主从复制的缺陷：" class="headerlink" title="主从复制的缺陷："></a>主从复制的缺陷：</h2><p>当主服务器宕机后，需要手动将某台从服务器切换到主服务器，这需要人工的干预，非常的耗时费力。并且造成一段时间内服务器不可用。</p><h2 id="哨兵模式（Sentinel）："><a href="#哨兵模式（Sentinel）：" class="headerlink" title="哨兵模式（Sentinel）："></a>哨兵模式（Sentinel）：</h2><p> <img src="/2021/11/23/redis-shao-bing-mo-shi/webp-16376385396132.webp" alt="img"></p><p>哨兵模式原理：</p><p>哨兵通过发送命令。等待redis服务器响应，进而监控多个redis实例。</p><p>哨兵作用：</p><ul><li>通过给主从服务器发送命令，让其返回运行状态，来监控主从服务器。</li><li>当哨兵监测到master宕机，会自动将slave切换成master，然后通过<strong>发布订阅模式</strong>通知其他的从服务器，修改配置文件，让它们切换主机。</li></ul><h3 id="多哨兵模式："><a href="#多哨兵模式：" class="headerlink" title="多哨兵模式："></a>多哨兵模式：</h3><p>一个哨兵对redis服务器进行监控会出现问题，因此可以使用多哨兵模式进行监控，各个哨兵彼此之间也能进行监控。形成多哨兵模式。</p><p><strong>故障切换（failover）</strong>的过程。</p><p>假设主服务器宕机，哨兵1先检测到这个结果，系统并不会马上进行failover过程，仅仅是哨兵1主观的认为主服务器不可用，这个现象成为<strong>主观下线</strong>。当后面的哨兵也检测到主服务器不可用，并且数量达到一定值时，那么哨兵之间就会进行一次投票，投票的结果由一个哨兵发起，进行failover操作。切换成功后，就会通过发布订阅模式，让各个哨兵把自己监控的从服务器实现切换主机，这个过程称为<strong>客观下线</strong>。这样对于客户端而言，一切都是透明的。</p><h1 id="参考："><a href="#参考：" class="headerlink" title="参考："></a>参考：</h1><p><a href="https://www.jianshu.com/p/06ab9daf921d">https://www.jianshu.com/p/06ab9daf921d</a></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> redis </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> redis </tag>
+            
+            <tag> 集群 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>redis集群模式</title>
       <link href="/2021/11/18/redis-zhu-cong-fu-zhi/"/>
       <url>/2021/11/18/redis-zhu-cong-fu-zhi/</url>
